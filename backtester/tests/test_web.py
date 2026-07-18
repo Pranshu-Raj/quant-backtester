@@ -127,3 +127,32 @@ def test_run_web_rejects_non_localhost():
 
     with pytest.raises(ValueError):
         run_web("0.0.0.0", 0)
+
+
+def test_resolve_config_csv_returns_temp_path():
+    import os
+
+    from backtester.core import Config
+    from backtester.web import _resolve_config
+
+    config, tmp = _resolve_config({"mode": "run"}, {"csv_file": _CSV.encode()})
+    assert isinstance(config, Config)
+    assert isinstance(tmp, str) and tmp
+    assert os.path.exists(tmp)  # file must outlive resolve (engine reads it later)
+    os.remove(tmp)
+
+
+def test_csv_upload_leaves_no_temp_file(server_url):
+    import glob
+    import os
+    import tempfile
+
+    pattern = os.path.join(tempfile.gettempdir(), "bt-web-*.csv")
+    before = len(glob.glob(pattern))
+    _multipart(
+        server_url,
+        {"mode": "run", "strategy_module": "backtester.examples.sma_crossover"},
+        files={"csv_file": _CSV.encode()},
+    )
+    after = len(glob.glob(pattern))
+    assert after == before  # no new leaked temp file
