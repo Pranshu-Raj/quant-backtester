@@ -16,12 +16,15 @@ pip install -e .
 
 ```bash
 bt --help
-bt run --config cfg.yaml
+bt demo                          # zero-setup sample backtest (bundled data + config)
+bt run --config cfg.yaml         # your own config
 bt run --config cfg.yaml --out run1
 ```
 
-The `bt run` command loads a YAML config (mapped 1:1 onto the `Config` model), builds the
-point-in-time data loader, runs the backtest, and prints the tearsheet + audit verdict.
+`bt demo` runs a bundled sample end-to-end with no local files — a stranger can get a
+trustworthy tearsheet in under five minutes after `pip install`. `bt run --config` loads a
+YAML config (mapped 1:1 onto the `Config` model), builds the point-in-time data loader,
+runs the backtest, and prints the tearsheet + audit verdict.
 
 > v0.1 is the pure library + CLI. The database, HTTP API, and web UI described in
 > `ARCHITECTURE.md` are target layers built in later phases.

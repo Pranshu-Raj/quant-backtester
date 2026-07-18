@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 
 # Bump on any change that affects run output (fills, costs, hashing). Part of the
 # determinism manifest that must match for two runs to be comparable.
-ENGINE_VERSION = "0.1.0"
+ENGINE_VERSION = "0.5.0"
 
 
 @dataclass(frozen=True)

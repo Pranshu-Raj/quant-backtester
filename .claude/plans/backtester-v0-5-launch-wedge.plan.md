@@ -84,9 +84,9 @@ python -m venv /tmp/bt-venv && /tmp/bt-venv/Scripts/python -m pip install dist/*
 | Root `examples/` drift from packaged copy | Low | Keep root copy for dev; `demo` uses packaged asset |
 
 ## Acceptance
-- [ ] `typer` + `pyyaml` are runtime dependencies
-- [ ] Wheel includes `backtester/examples/data/prices.csv` and `config.yaml`
-- [ ] `bt demo` runs a bundled sample end-to-end (tearsheet + audit) from any cwd
-- [ ] `bt run --config PATH` works as documented
-- [ ] `backtester/tests/test_packaging.py` passes; full `pytest` green
-- [ ] Clean-venv install + `bt demo` succeeds (stranger flow)
+- [x] `typer` + `pyyaml` are runtime dependencies
+- [x] Wheel includes `backtester/examples/data/prices.csv` and `config.yaml`
+- [x] `bt demo` runs a bundled sample end-to-end (tearsheet + audit) from any cwd
+- [x] `bt run --config PATH` works as documented
+- [x] `backtester/tests/test_packaging.py` passes; full `pytest` green
+- [x] Clean-venv install + `bt demo` succeeds (stranger flow)

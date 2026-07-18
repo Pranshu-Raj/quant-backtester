@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "backtester"
-version = "0.1.0"
+version = "0.5.0"
 description = "Stock-only backtesting platform with a no-look-ahead-by-default engine."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -13,6 +13,8 @@ dependencies = [
     "pydantic>=2",
     "pandas",
     "numpy",
+    "typer",
+    "pyyaml",
 ]
 
 [project.optional-dependencies]
@@ -21,8 +23,6 @@ dev = [
     "ruff",
     "mypy",
     "pre-commit",
-    "pyyaml",
-    "typer",
 ]
 
 [project.scripts]
@@ -31,6 +31,9 @@ bt = "backtester.cli:app"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["backtester*"]
+
+[tool.setuptools.package-data]
+backtester = ["examples/**/*.csv", "examples/**/*.yaml"]
 
 [tool.ruff]
 line-length = 100

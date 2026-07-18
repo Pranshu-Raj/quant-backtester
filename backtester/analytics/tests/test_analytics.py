@@ -54,13 +54,17 @@ def _dt(value: str) -> pd.Timestamp:
 
 
 def _make_result(equity: pd.Series, trades: list) -> BacktestResult:
+    from backtester.audit.report import AuditReport
+
     return BacktestResult(
         equity_curve=equity,
         trades=trades,
         config_hash="test",
         data_hash="test",
         engine_version="0.1.0",
-        audit=None,
+        audit=AuditReport(
+            deflated_sharpe=0.5, pbo=0.0, verdict="warn", notes="test audit"
+        ),
     )
 
 

@@ -51,5 +51,11 @@ def print_tearsheet(result: "BacktestResult") -> str:
         f"  Commission   : {ca['total_commission']:.4f}",
         f"  Slippage     : {ca['total_slippage']:.4f}",
         f"  Net Return   : {ca['net_return']:.4f}",
+        "",
+        "Audit (mandatory overfitting check)",
+        "-----------------------------------",
+        f"  Verdict            : {result.audit.verdict}",
+        f"  Deflated Sharpe    : {result.audit.deflated_sharpe:.4f}",
+        f"  Notes              : {result.audit.notes}",
     ]
     return "\n".join(lines)
