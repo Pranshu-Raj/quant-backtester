@@ -251,5 +251,24 @@ def validate(
     typer.echo(print_forward(result))
 
 
+@app.command()
+def web(
+    host: str = typer.Option(
+        "127.0.0.1",
+        "--host",
+        help="Bind host — loopback only (127.0.0.1, ::1, localhost). Non-loopback is refused.",
+    ),
+    port: int = typer.Option(8000, "--port", help="Bind port."),
+) -> None:
+    """Start the minimal localhost web UI (stdlib only, no new dependencies)."""
+    from backtester.web import run_web
+
+    try:
+        run_web(host=host, port=port)
+    except ValueError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(code=1)
+
+
 if __name__ == "__main__":
     app()

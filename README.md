@@ -21,6 +21,7 @@ bt run --config cfg.yaml         # your own config
 bt run --config cfg.yaml --out run1
 bt validate                      # forward check: in-sample vs out-of-sample gap
 bt validate --split 0.7         # customize the in-sample fraction
+bt web                          # minimal localhost web UI (no new dependencies)
 ```
 
 `bt demo` runs a bundled sample end-to-end with no local files — a stranger can get a
@@ -52,6 +53,29 @@ and reports the gap (CAGR / Sharpe / Sortino / Max Drawdown / Deflated Sharpe) w
 strategy hold up on data it never saw? Reporting only: it never re-fits the
 strategy. A leaky strategy still hard-aborts with `LookAheadError`.
 
-> v0.5 is the installable, trust-visible, forward-validated wedge. The database,
-> HTTP API, web UI, and empirical PBO described in `ARCHITECTURE.md` are target
-> layers built in later phases.
+### Web UI
+
+`bt web` starts a minimal, **zero-dependency** web UI at `http://127.0.0.1:8000`
+(built on the Python stdlib `http.server` — no new packages to install). A single
+page lets you pick **Run** (backtest + audit) or **Validate** (forward check), run
+the **bundled sample with no files**, paste an inline strategy, or upload a CSV.
+The result — tearsheet, audit verdict, or the forward-check report — renders inline.
+
+```bash
+bt web                          # serve at http://127.0.0.1:8000
+bt web --port 8731             # pick a port
+```
+
+> **Trust boundary — read this.** `bt web` binds to `127.0.0.1` only and is meant
+> for a **single, trusted, local user** (the v0.5 single-user model; a real
+> multi-user server with auth is a v1.0+ concern). It **executes any strategy code
+> you paste** and reads uploaded CSV files. That is arbitrary local code/file
+> execution — safe *only* because it is localhost and single-user. Do not expose it
+> to a network or untrusted users, and there is no sandboxing. All errors are caught
+> and shown on the page, so the server never crashes on bad input. The `--host`
+> option is locked to loopback addresses (`127.0.0.1`, `::1`, `localhost`); any
+> other host is refused.
+
+> v0.5 is the installable, trust-visible, forward-validated, web-accessible wedge.
+> The database, full HTTP API, and empirical PBO described in `ARCHITECTURE.md` are
+> target layers built in later phases.
