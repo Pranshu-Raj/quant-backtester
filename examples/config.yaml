@@ -1,6 +1,6 @@
 universe:
   symbols: ["AAA"]
-  start: "2023-01-02"
+  start: "2021-01-01"
   end: "2024-12-31"
 starting_cash: 100000.0
 fill_model: "next_close"

@@ -48,6 +48,36 @@ def _load_strategy(module_path: str):
     return strat
 
 
+def _load_strategy_factory(module_path: str):
+    """Return a zero-arg factory yielding fresh strategy instances.
+
+    Prefers a module-level ``make_strategy`` callable; otherwise synthesizes one
+    from the module's ``strategy`` instance (``lambda: type(instance)()``). A
+    fresh instance per call keeps forward-validation legs independent — a reused
+    stateful strategy would leak in-sample memory into the out-of-sample leg.
+    """
+    try:
+        mod = importlib.import_module(module_path)
+    except ImportError as exc:
+        typer.echo(f"could not import strategy module {module_path!r}: {exc}", err=True)
+        raise typer.Exit(code=1) from exc
+    maker = getattr(mod, "make_strategy", None)
+    if callable(maker):
+        return maker
+    inst = getattr(mod, "strategy", None)
+    if inst is None and hasattr(mod, "Strategy"):
+        inst = mod.Strategy()
+    if inst is None:
+        typer.echo(
+            f"{module_path!r} must expose a `strategy` instance, a `make_strategy` "
+            f"factory, or a `Strategy` class",
+            err=True,
+        )
+        raise typer.Exit(code=1)
+    cls = type(inst)
+    return lambda: cls()
+
+
 def _resolve_bundled(pkg_path: str):
     """Resolve a package-relative path to a real filesystem ``Path``.
 
@@ -169,6 +199,56 @@ def run(
         }
         (run_dir / "result.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
         typer.echo(f"manifest written to {run_dir / 'result.json'}")
+
+
+@app.command()
+def validate(
+    config: Optional[Path] = typer.Option(
+        None, "--config", help="Path to a YAML config file (defaults to the bundled sample)."
+    ),
+    split: float = typer.Option(
+        0.6, "--split", help="In-sample fraction of the date span, in (0, 1)."
+    ),
+    strategy: str = typer.Option(
+        "backtester.examples.sma_crossover",
+        "--strategy",
+        help="Importable module exposing a `strategy` instance or `make_strategy` factory.",
+    ),
+) -> None:
+    """Forward-validate a strategy: report the in-sample vs out-of-sample gap.
+
+    Splits the data into an in-sample leg and a held-out out-of-sample leg, runs
+    the same strategy on both, and prints the performance gap. Reporting only —
+    it never re-fits the strategy. A leaky strategy still hard-aborts.
+    """
+    if config is None:
+        parsed = _bundled_config()
+    else:
+        if not config.exists():
+            typer.echo(f"config not found: {config}", err=True)
+            raise typer.Exit(code=1)
+
+        from backtester.core import Config
+
+        raw = yaml.safe_load(config.read_text(encoding="utf-8")) or {}
+        parsed = Config.model_validate(raw)
+
+    typer.echo(
+        f"loaded config for {len(parsed.universe.symbols)} symbols, "
+        f"{parsed.universe.start}..{parsed.universe.end}"
+    )
+
+    from backtester.analytics import print_forward
+    from backtester.data import AdjustmentPolicy, CSVLocalAdapter, PITDataLoader
+    from backtester.forward import run_forward
+
+    adapter = CSVLocalAdapter(path=parsed.data_path)
+    adjustment = AdjustmentPolicy(mode=parsed.adjustment) if parsed.adjustment else None
+    loader = PITDataLoader(adapter=adapter, adjustment=adjustment)
+
+    factory = _load_strategy_factory(strategy)
+    result = run_forward(parsed, loader, factory, split=split)
+    typer.echo(print_forward(result))
 
 
 if __name__ == "__main__":

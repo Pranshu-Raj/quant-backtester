@@ -43,3 +43,16 @@ def test_run_defaults_to_bundled_sample() -> None:
 def test_run_missing_config_errors() -> None:
     result = runner.invoke(app, ["run", "--config", "does-not-exist.yaml"])
     assert result.exit_code != 0
+
+
+def test_validate_runs_end_to_end() -> None:
+    result = runner.invoke(app, ["validate"])
+    assert result.exit_code == 0
+    assert "Forward" in result.stdout
+    assert "Out-of-sample" in result.stdout
+    assert "Forward verdict" in result.stdout
+
+
+def test_validate_invalid_split_errors() -> None:
+    result = runner.invoke(app, ["validate", "--split", "1.5"])
+    assert result.exit_code != 0

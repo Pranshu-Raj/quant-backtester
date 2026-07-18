@@ -19,6 +19,8 @@ bt --help
 bt demo                          # zero-setup sample backtest (bundled data + config)
 bt run --config cfg.yaml         # your own config
 bt run --config cfg.yaml --out run1
+bt validate                      # forward check: in-sample vs out-of-sample gap
+bt validate --split 0.7         # customize the in-sample fraction
 ```
 
 `bt demo` runs a bundled sample end-to-end with no local files — a stranger can get a
@@ -41,5 +43,15 @@ Every run also emits the **mandatory overfitting audit** — Deflated Sharpe, th
 backtest-overfitting probability (PBO), and a `pass`/`warn` verdict — so you can read
 exactly how much to trust the result before risking capital.
 
-> v0.5 is the installable, trust-visible wedge. The database, HTTP API, web UI, and
-> empirical PBO described in `ARCHITECTURE.md` are target layers built in later phases.
+### Forward check
+
+`bt validate` runs the **forward-validation mode**: it splits the data into an
+in-sample leg and a held-out out-of-sample leg, runs the *same* strategy on both,
+and reports the gap (CAGR / Sharpe / Sortino / Max Drawdown / Deflated Sharpe) with a
+`robust` / `degraded` / `failed` verdict. This is the core trust test — does the
+strategy hold up on data it never saw? Reporting only: it never re-fits the
+strategy. A leaky strategy still hard-aborts with `LookAheadError`.
+
+> v0.5 is the installable, trust-visible, forward-validated wedge. The database,
+> HTTP API, web UI, and empirical PBO described in `ARCHITECTURE.md` are target
+> layers built in later phases.

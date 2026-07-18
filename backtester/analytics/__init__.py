@@ -7,7 +7,7 @@ PRINCIPLE 5 / analytics §3.6). Every function is pure: it never mutates its inp
 
 from backtester.analytics.metrics import cagr, calmar, max_drawdown, sharpe, sortino
 from backtester.analytics.stats import cost_attribution, trade_stats
-from backtester.analytics.tearsheet import print_tearsheet, tearsheet
+from backtester.analytics.tearsheet import print_forward, print_tearsheet, tearsheet
 
 __all__ = [
     "cagr",
@@ -19,4 +19,5 @@ __all__ = [
     "cost_attribution",
     "tearsheet",
     "print_tearsheet",
+    "print_forward",
 ]
