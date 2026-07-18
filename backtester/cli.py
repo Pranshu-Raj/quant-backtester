@@ -16,6 +16,7 @@ import importlib.resources as resources
 import json
 import tempfile
 from pathlib import Path
+from typing import Optional
 
 import typer
 import yaml
@@ -110,7 +111,9 @@ def demo(
 
 @app.command()
 def run(
-    config: Path = typer.Option(..., "--config", help="Path to a YAML config file."),
+    config: Optional[Path] = typer.Option(
+        None, "--config", help="Path to a YAML config file (defaults to the bundled sample)."
+    ),
     out: str = typer.Option(None, "--out", help="Persist a run manifest under this id."),
     strategy: str = typer.Option(
         "backtester.examples.sma_crossover",
@@ -118,15 +121,18 @@ def run(
         help="Importable module exposing a `strategy` instance (StrategyProtocol).",
     ),
 ) -> None:
-    """Run a backtest from a YAML config file."""
-    if not config.exists():
-        typer.echo(f"config not found: {config}", err=True)
-        raise typer.Exit(code=1)
+    """Run a backtest from a YAML config file (or the bundled sample if omitted)."""
+    if config is None:
+        parsed = _bundled_config()
+    else:
+        if not config.exists():
+            typer.echo(f"config not found: {config}", err=True)
+            raise typer.Exit(code=1)
 
-    from backtester.core import Config
+        from backtester.core import Config
 
-    raw = yaml.safe_load(config.read_text(encoding="utf-8")) or {}
-    parsed = Config.model_validate(raw)
+        raw = yaml.safe_load(config.read_text(encoding="utf-8")) or {}
+        parsed = Config.model_validate(raw)
 
     typer.echo(
         f"loaded config for {len(parsed.universe.symbols)} symbols, "

@@ -26,5 +26,20 @@ trustworthy tearsheet in under five minutes after `pip install`. `bt run --confi
 YAML config (mapped 1:1 onto the `Config` model), builds the point-in-time data loader,
 runs the backtest, and prints the tearsheet + audit verdict.
 
-> v0.1 is the pure library + CLI. The database, HTTP API, and web UI described in
-> `ARCHITECTURE.md` are target layers built in later phases.
+## Trust by architecture
+
+Look-ahead bias is impossible by construction, not discipline. A strategy can only ever
+read indicator state up to the current bar `t`; reading `t + 1` raises `LookAheadError`
+and aborts the run with **no partial result**. See it fail on purpose:
+
+```bash
+bt run --strategy backtester.examples.leaky
+# -> LookAheadError: the engine refuses to backtest a leaky strategy
+```
+
+Every run also emits the **mandatory overfitting audit** — Deflated Sharpe, the
+backtest-overfitting probability (PBO), and a `pass`/`warn` verdict — so you can read
+exactly how much to trust the result before risking capital.
+
+> v0.5 is the installable, trust-visible wedge. The database, HTTP API, web UI, and
+> empirical PBO described in `ARCHITECTURE.md` are target layers built in later phases.

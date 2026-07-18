@@ -29,10 +29,17 @@ def test_demo_runs_end_to_end() -> None:
     assert result.exit_code == 0
     assert "Tearsheet" in result.stdout
     assert "CAGR" in result.stdout
+    assert "PBO" in result.stdout
     assert ("pass" in result.stdout) or ("warn" in result.stdout)
 
 
-def test_run_requires_config() -> None:
-    # Without --config, Typer errors (missing required option), not a crash.
+def test_run_defaults_to_bundled_sample() -> None:
+    # No --config => runs the bundled sample (same data as `bt demo`).
     result = runner.invoke(app, ["run"])
+    assert result.exit_code == 0
+    assert "Tearsheet" in result.stdout
+
+
+def test_run_missing_config_errors() -> None:
+    result = runner.invoke(app, ["run", "--config", "does-not-exist.yaml"])
     assert result.exit_code != 0

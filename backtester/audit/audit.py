@@ -34,6 +34,20 @@ from .report import AuditReport
 PASS_THRESHOLD = 1.0
 
 
+def _pbo_of_trials(trials: int) -> float:
+    """Backtest-overfitting probability proxy from configurations searched.
+
+    With a single configuration there is no selection, so the probability the
+    chosen strategy is overfit is 0. As more configurations are searched the
+    chance the *selected* (best-looking) one is a false positive rises toward 1.
+    This is a documented v0.5 scaffold; the empirical PBO (which needs the
+    N-trial performance distribution) is a v1.0 item.
+    """
+    if trials <= 1:
+        return 0.0
+    return 1.0 - 1.0 / float(trials)
+
+
 def audit(equity_curve: pd.Series, trials: int = 1) -> AuditReport:
     """Run the mandatory overfitting audit on a backtest result.
 
@@ -55,6 +69,8 @@ def audit(equity_curve: pd.Series, trials: int = 1) -> AuditReport:
     """
     trials = max(int(trials), 1)  # ensure trials >= 1
 
+    pbo = _pbo_of_trials(trials)
+
     raw_sharpe = sharpe(equity_curve)
 
     # Deflated Sharpe Ratio (scaffold approximation):
@@ -73,7 +89,7 @@ def audit(equity_curve: pd.Series, trials: int = 1) -> AuditReport:
 
     return AuditReport(
         deflated_sharpe=float(deflated_sharpe),
-        pbo=0.0,
+        pbo=pbo,
         verdict=verdict,
         notes=notes,
     )

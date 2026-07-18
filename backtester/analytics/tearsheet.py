@@ -56,6 +56,7 @@ def print_tearsheet(result: "BacktestResult") -> str:
         "-----------------------------------",
         f"  Verdict            : {result.audit.verdict}",
         f"  Deflated Sharpe    : {result.audit.deflated_sharpe:.4f}",
+        f"  PBO                : {result.audit.pbo:.4f}",
         f"  Notes              : {result.audit.notes}",
     ]
     return "\n".join(lines)

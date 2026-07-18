@@ -66,3 +66,21 @@ def test_trials_clamped_to_minimum() -> None:
     at_zero = audit(result, trials=0).deflated_sharpe
     at_one = audit(result, trials=1).deflated_sharpe
     assert at_zero == at_one
+
+
+def test_pbo_zero_for_single_trial() -> None:
+    # No configurations searched => no selection overfitting => PBO is 0.
+    assert audit(_good_curve(), trials=1).pbo == 0.0
+
+
+def test_pbo_monotonic_and_bounded_in_trials() -> None:
+    result = _good_curve()
+    previous: float | None = None
+    for trials in (1, 2, 5, 20, 100):
+        pbo = audit(result, trials=trials).pbo
+        assert 0.0 <= pbo <= 1.0
+        if previous is not None:
+            assert pbo >= previous - 1e-9
+        previous = pbo
+    # With many trials searched the overfitting probability is strictly positive.
+    assert audit(result, trials=100).pbo > 0.0

@@ -183,6 +183,18 @@ def test_look_ahead_access_raises(tmp_path: Path) -> None:
         run(config, loader, _LeakyStrategy())
 
 
+def test_shipped_leaky_example_aborts(tmp_path: Path) -> None:
+    from backtester.examples.leaky import strategy as leaky
+
+    config = _make_config()
+    loader = _make_loader(tmp_path)
+
+    # The shipped leak-failing example must abort the same way a user-written
+    # leaky strategy would — the engine refuses to produce a partial result.
+    with pytest.raises(LookAheadError):
+        run(config, loader, leaky)
+
+
 # --- End-to-end run ---------------------------------------------------------
 
 

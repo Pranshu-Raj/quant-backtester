@@ -45,8 +45,8 @@ We'll know we're right when a stranger installs the tool and runs a trustworthy,
 
 | # | Milestone | Outcome | Status | Plan |
 |---|---|---|---|---|
-| 1 | Installable | A new user can `pip install` and run a sample backtest unaided in < 5 min | in-progress | `.claude/plans/backtester-v0-5-launch-wedge.plan.md` |
-| 2 | Trust visible | Every result shows the mandatory audit (Deflated Sharpe + PBO); a leak-failing example proves the engine refuses to lie | pending | — |
+| 1 | Installable | A new user can `pip install` and run a sample backtest unaided in < 5 min | complete | `.claude/plans/backtester-v0-5-launch-wedge.plan.md` |
+| 2 | Trust visible | Every result shows the mandatory audit (Deflated Sharpe + PBO); a leak-failing example proves the engine refuses to lie | complete | `.claude/plans/backtester-v0-5-m2-trust-visible.plan.md` |
 | 3 | Forward validation | A run validates in-sample → out-of-sample and reports the gap, so the user gets a forward check, not just in-sample fit | pending | — |
 | 4 | Web UI | A minimal interface lets a non-CLI user run a backtest and read the verdict in 5 min | pending | — |
 
