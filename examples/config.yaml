@@ -1,0 +1,15 @@
+universe:
+  symbols: ["AAA"]
+  start: "2023-01-02"
+  end: "2024-12-31"
+starting_cash: 100000.0
+fill_model: "next_close"
+fill_lag: 1
+cost_model: "flat_per_trade"
+cost_params:
+  commission: 1.0
+data_path: "examples/data/prices.csv"
+adjustment: "back"
+seed: 42
+audit: true
+trials: 1

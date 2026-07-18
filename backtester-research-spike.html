@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Backtesting Platform — Research Spike (A/B/C)</title>
+<style>
+  :root {
+    --paper: #fbfaf7;
+    --ink: #1f1d1a;
+    --ink-soft: #4a4641;
+    --slate: #5b6470;
+    --line: #e4e0d8;
+    --line-strong: #cfc9bd;
+    --accent: #b45309;       /* ochre */
+    --accent-soft: #f3e6d2;
+    --good: #0f766e;
+    --good-soft: #d9efeb;
+    --warn: #9a3412;
+    --warn-soft: #f6e2d8;
+    --defer: #5b6470;
+    --defer-soft: #e7e9ec;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16.5px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap {
+    display: grid;
+    grid-template-columns: 248px minmax(0, 1fr);
+    max-width: 1180px;
+    margin: 0 auto;
+  }
+  /* Sidebar TOC */
+  nav.toc {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 38px 22px 38px 30px;
+    border-right: 1px solid var(--line);
+    background: #f6f4ef;
+  }
+  nav.toc .brand {
+    font-family: var(--serif);
+    font-size: 13px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+  nav.toc .brand-sub {
+    font-size: 12px;
+    color: var(--slate);
+    margin-bottom: 26px;
+  }
+  nav.toc ol { list-style: none; margin: 0; padding: 0; counter-reset: toc; }
+  nav.toc li { margin: 0; }
+  nav.toc a {
+    display: block;
+    padding: 7px 10px;
+    border-radius: 7px;
+    color: var(--ink-soft);
+    text-decoration: none;
+    font-size: 14px;
+    border-left: 2px solid transparent;
+  }
+  nav.toc a:hover { background: #ece8df; color: var(--ink); }
+  nav.toc a.active { color: var(--accent); border-left-color: var(--accent); background: var(--accent-soft); }
+  nav.toc .grp { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--slate); margin: 18px 0 6px 10px; }
+
+  /* Main */
+  main { padding: 46px 56px 120px; min-width: 0; }
+  header.hero { margin-bottom: 10px; }
+  .eyebrow {
+    font-family: var(--serif);
+    font-size: 12.5px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  h1 {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: 40px;
+    line-height: 1.1;
+    margin: 10px 0 14px;
+    letter-spacing: -0.01em;
+  }
+  header.hero p.lede {
+    font-size: 18px;
+    color: var(--ink-soft);
+    max-width: 60ch;
+    margin: 0 0 8px;
+  }
+  .meta-row { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0 6px; }
+  .chip {
+    font-size: 12.5px;
+    padding: 5px 11px;
+    border-radius: 999px;
+    border: 1px solid var(--line-strong);
+    background: #fff;
+    color: var(--slate);
+  }
+  .chip.accent { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+
+  section { padding-top: 46px; }
+  h2 {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: 27px;
+    margin: 0 0 6px;
+    letter-spacing: -0.01em;
+  }
+  .sec-tag {
+    display: inline-block;
+    font-size: 12px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 5px;
+    padding: 2px 8px;
+    margin-bottom: 14px;
+  }
+  h3 { font-family: var(--serif); font-size: 20px; font-weight: 600; margin: 30px 0 8px; }
+  h4 { font-size: 15.5px; margin: 20px 0 6px; color: var(--ink); }
+  p { margin: 12px 0; }
+  a.link { color: var(--accent); text-decoration: none; border-bottom: 1px solid var(--accent-soft); }
+  a.link:hover { border-bottom-color: var(--accent); }
+  strong { color: var(--ink); }
+  code { font-family: var(--mono); font-size: 13.5px; background: #f0ede6; padding: 1px 5px; border-radius: 4px; }
+
+  table { width: 100%; border-collapse: collapse; margin: 18px 0 8px; font-size: 14.5px; }
+  thead th {
+    text-align: left;
+    font-weight: 600;
+    color: var(--slate);
+    border-bottom: 2px solid var(--line-strong);
+    padding: 9px 12px;
+    font-size: 12.5px;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+  tbody td { padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tbody tr:hover { background: #f6f4ef; }
+  td .pl { font-family: var(--mono); font-size: 12.5px; color: var(--slate); }
+
+  .callout {
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin: 20px 0;
+    border: 1px solid var(--line-strong);
+    background: #fff;
+  }
+  .callout.good { border-color: var(--good); background: var(--good-soft); }
+  .callout.warn { border-color: var(--warn); background: var(--warn-soft); }
+  .callout.accent { border-color: var(--accent); background: var(--accent-soft); }
+  .callout .ttl { font-weight: 700; font-size: 14px; letter-spacing: .02em; text-transform: uppercase; margin-bottom: 6px; }
+  .callout.good .ttl { color: var(--good); }
+  .callout.warn .ttl { color: var(--warn); }
+  .callout.accent .ttl { color: var(--accent); }
+  .callout p:last-child { margin-bottom: 0; }
+
+  ul.clean { margin: 12px 0; padding-left: 0; list-style: none; }
+  ul.clean li { padding: 7px 0 7px 26px; position: relative; border-bottom: 1px solid var(--line); }
+  ul.clean li:last-child { border-bottom: none; }
+  ul.clean li::before { content: "▸"; position: absolute; left: 4px; color: var(--accent); }
+  ul.clean li b { color: var(--ink); }
+
+  .pill-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
+  .pill { font-size: 13px; padding: 5px 12px; border-radius: 7px; font-weight: 600; }
+  .pill.build { background: var(--good-soft); color: var(--good); border: 1px solid var(--good); }
+  .pill.door { background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent); }
+  .pill.defer { background: var(--defer-soft); color: var(--defer); border: 1px solid var(--defer); }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 18px 0; }
+  .card { border: 1px solid var(--line-strong); border-radius: 10px; padding: 16px 18px; background: #fff; }
+  .card h4 { margin-top: 0; color: var(--accent); }
+
+  footer { margin-top: 60px; padding-top: 22px; border-top: 1px solid var(--line-strong); color: var(--slate); font-size: 13px; }
+  footer h3 { font-family: var(--serif); color: var(--ink); }
+  footer ol { padding-left: 18px; }
+  footer li { margin: 6px 0; }
+  .small { font-size: 13px; color: var(--slate); }
+  @media (max-width: 880px) {
+    .wrap { grid-template-columns: 1fr; }
+    nav.toc { position: static; height: auto; border-right: none; border-bottom: 1px solid var(--line); }
+    main { padding: 30px 22px 90px; }
+    h1 { font-size: 32px; }
+    .grid2 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="toc">
+    <div class="brand">Research Spike</div>
+    <div class="brand-sub">Backtesting Platform · Stocks-only · Python</div>
+    <ol>
+      <li><a href="#summary">Summary &amp; Verdict</a></li>
+      <li><a href="#a">A · Architecture Patterns</a></li>
+      <li><a href="#b">B · Tearsheet &amp; Data Guardrails</a></li>
+      <li><a href="#c">C · Business-Model Patterns</a></li>
+      <li><a href="#d">D · OSS Landscape &amp; Roadmap</a></li>
+      <li><a href="#synthesis">Synthesis · Our Design</a></li>
+      <li><a href="#features">Feature Shortlist</a></li>
+      <li><a href="#next">Next Steps</a></li>
+      <li><a href="#log">Research Log</a></li>
+      <li><a href="#sources">Sources</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <header class="hero">
+      <div class="eyebrow">Brainstorm · Pre-build Research</div>
+      <h1>Backtesting Platform: Research Spike</h1>
+      <p class="lede">Three lenses before we commit to a feature list — what the proven engines look like inside (A), what a trustworthy result even requires (B), and how this becomes a business if it earns one (C).</p>
+      <div class="meta-row">
+        <span class="chip accent">Scope: Stocks only</span>
+        <span class="chip">Stack: Python</span>
+        <span class="chip">Personal tool → product-ready</span>
+        <span class="chip">Date: 2026-07-17</span>
+      </div>
+    </header>
+
+    <section id="summary">
+      <h2>Summary &amp; Verdict</h2>
+      <p>The quant backtesting space is <strong>old and well-trodden</strong>. Rebuilding from first principles means re-learning its hard lessons the expensive way — so the research spike's job is to extract <em>proven patterns</em> and <em>known traps</em>, not a feature checklist to copy.</p>
+      <div class="callout accent">
+        <div class="ttl">Verdict</div>
+        <p>Build a <strong>modular, handler-style Python engine</strong> with a strict split of data / strategy / portfolio / broker / analytics, driven by <strong>config + data → results</strong> pure runs. Use a <strong>hybrid engine</strong>: vectorized indicators, bar-by-bar portfolio simulation with next-bar-close fills and first-class cost models. Ship <strong>no-look-ahead tests from day one</strong>. Build like a product, scope like a personal tool — keep the door open for live-trading, a hosted API, and a licensable data layer, but don't build any of those yet.</p>
+      </div>
+      <p class="small">The viable businesses in this space are consistently <strong>engine (free/OSS) + data or hosting (paid)</strong> — not the calculator itself. Design the engine to be clean and open, and design the data layer to be a separable, licensable asset.</p>
+    </section>
+
+    <section id="a">
+      <h2>A · Architecture Patterns</h2>
+      <span class="sec-tag">What proven engines look like inside</span>
+      <p>Five engines cover the design space. Each teaches one distinct lesson; together they map the decisions we face.</p>
+
+      <table>
+        <thead>
+          <tr><th>Engine</th><th>Language / Model</th><th>Core idea we can borrow</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>LEAN</strong> <span class="pl">(QuantConnect)</span></td>
+            <td>C# · handler-based, config environments</td>
+            <td>Engine split into pluggable handlers (<code>ISetupHandler</code>, <code>IDataFeed</code>, <code>ITransactionHandler</code>, <code>IRealtimeHandler</code>, <code>IResultHandler</code>). Same handlers run backtest <em>and</em> live by swapping config "environments". Fee/slippage/brokerage are pluggable models.</td>
+          </tr>
+          <tr>
+            <td><strong>backtrader</strong></td>
+            <td>Python · event-driven</td>
+            <td><code>Cerebro</code> orchestrates; <code>Strategy.next()</code> runs per bar; <code>LineBuffer</code> circular buffers hold time series; <em>analyzers</em> and <em>observers</em> are separated from strategy logic.</td>
+          </tr>
+          <tr>
+            <td><strong>vectorbt</strong></td>
+            <td>Python · fully vectorized (Numba + Rust)</td>
+            <td>Strategies are <em>columns in arrays</em>, not OOP classes. Fills ~1M orders in ~70–100&nbsp;ms. Built for sweeping thousands of param sets in seconds.</td>
+          </tr>
+          <tr>
+            <td><strong>nautilus_trader</strong></td>
+            <td>Rust core + Python control plane</td>
+            <td>Compiled core for speed <em>and determinism</em> (fixed-point <code>i64</code>/<code>i128</code> arithmetic). Research-to-live parity: identical execution semantics in sim and live.</td>
+          </tr>
+          <tr>
+            <td><strong>zipline-reloaded / bt</strong></td>
+            <td>Python · Pipeline + portfolio tree</td>
+            <td><code>Pipeline(columns, screen)</code> → <code>attach_pipeline</code> → <code>pipeline_output</code> for factor/alpha research; <code>bt</code> does portfolio allocation as a tree of strategies. Clean alpha-vs-allocation split.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Patterns to adopt</h3>
+      <ul class="clean">
+        <li><b>Strict layer separation</b> — data / strategy (alpha) / portfolio / broker (fill) / analytics as independent modules with clear interfaces.</li>
+        <li><b>Config-driven environments</b> — a run is <code>config + data → results</code>. Design the backtest/live switch now (even if we never ship live) so the seam exists.</li>
+        <li><b>Pluggable data sources &amp; cost models</b> — the engine never knows where data came from or what the commission schedule is.</li>
+        <li><b>Hybrid engine</b> — vectorized indicator/signal math (fast) + a bar-by-bar portfolio simulator (correct-by-construction, no look-ahead). Best of both for daily stocks.</li>
+        <li><b>Analytics as separate "analyzers"</b> — metrics computed from results, never baked into the strategy.</li>
+        <li><b>Determinism by design</b> — seeded RNG, snapshot-versioned data, fixed-point where rounding matters. Required for reproducible research and for any future live parity.</li>
+      </ul>
+
+      <h3>Patterns to avoid</h3>
+      <div class="callout warn">
+        <div class="ttl">Anti-patterns</div>
+        <p><b>Single global-state notebook</b> — the #1 thing that kills a personal tool's path to product. Keep the engine importable.<br>
+        <b>Hardcoded data paths / personal config</b> — bakes the tool to one machine.<br>
+        <b>Costs as an afterthought</b> — unrealistic fills make every result suspect.<br>
+        <b>Same-bar-close fills</b> — classic look-ahead (see lens B).</p>
+      </div>
+    </section>
+
+    <section id="b">
+      <h2>B · Tearsheet &amp; Data Guardrails</h2>
+      <span class="sec-tag">What a trustworthy result requires</span>
+      <p>A backtester is only as good as its freedom from bias. This lens has two halves: the <strong>standard metrics</strong> a quant expects, and the <strong>data-quality traps</strong> that must become design guardrails.</p>
+
+      <h3>The canonical tearsheet</h3>
+      <table>
+        <thead>
+          <tr><th>Metric</th><th>Meaning</th><th>Rough benchmark</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>CAGR</strong></td><td>Annualized compounded return</td><td>—</td></tr>
+          <tr><td><strong>Sharpe</strong></td><td>Return per unit of total risk <span class="pl">(Rp−Rf)/σ</span></td><td>&lt;0.5 poor · 0.5–1.2 ok · &gt;1.2 good</td></tr>
+          <tr><td><strong>Sortino</strong></td><td>Return per unit of <em>downside</em> risk only</td><td>higher than Sharpe, same spirit</td></tr>
+          <tr><td><strong>Calmar</strong></td><td>CAGR ÷ |Max Drawdown|</td><td>&lt;0.5 poor · &gt;1.2 good</td></tr>
+          <tr><td><strong>Max Drawdown</strong></td><td>Largest peak-to-trough decline</td><td>&lt;10% great · 10–20% ok · &gt;30% poor</td></tr>
+          <tr><td><strong>Turnover</strong></td><td>Filled notional ÷ equity, per rebalance / annual</td><td>watch &gt;1000%/yr (cost-prohibitive)</td></tr>
+          <tr><td><strong>Exposure / Occupancy</strong></td><td>Avg invested fraction, time-in-market, open positions</td><td>context for risk</td></tr>
+        </tbody>
+      </table>
+      <p class="small">Supplement with trade stats (win rate, profit factor, expectancy) and <strong>cost attribution</strong>. Red flags: Sharpe &gt; 2.5 unexplained, drawdown recovering instantly, no down years in 5+ yrs, turnover &gt; 1000%/yr. Tools: <em>pyfolio</em>, <em>ml4trading</em> (adds Deflated Sharpe Ratio for overfitting).</p>
+
+      <h3>Data-quality traps → design guardrails</h3>
+      <div class="grid2">
+        <div class="card">
+          <h4>Look-ahead bias</h4>
+          <p>Three forms: <b>direct</b> (tomorrow's close decides today's trade), <b>data-revision</b> (using revised macro vs initial release — use ALFRED vintages), <b>knowledge</b> (conditioning on info unavailable in real time). The pandas alignment trap: a signal using <em>today's</em> close to trade <em>the same bar</em>. Fix: <code>.shift(1)</code>. Detect: the <b>shift test</b> — lag inputs one bar; a clean strategy shouldn't collapse.</p>
+        </div>
+        <div class="card">
+          <h4>Survivorship bias</h4>
+          <p>Backtesting only <em>currently-listed</em> stocks silently drops bankrupt/delisted names — the biggest losers — inflating returns by <b>1–2%/yr</b> (up to 2–4% for hedge-fund-style universes). Fix: <b>point-in-time constituent data</b> + include delisting returns. Most free sources lack this — design the data layer to accept it later.</p>
+        </div>
+        <div class="card">
+          <h4>Split / dividend adjustment</h4>
+          <p>Prices must be split- and dividend-adjusted <em>consistently</em>, or returns are garbage. Make adjusted price the canonical stored series; keep raw available.</p>
+        </div>
+        <div class="card">
+          <h4>Overfitting / data snooping</h4>
+          <p>Massive parameter sweeps invite false discovery. Report <b>Deflated Sharpe Ratio</b> and prefer walk-forward over a single in-sample fit. The engine's config-driven runs make walk-forward trivial.</p>
+        </div>
+      </div>
+      <div class="callout good">
+        <div class="ttl">Guardrails to ship from day one</div>
+        <p>① <b>Buy-and-hold check</b> — 100% single asset ≈ that asset's return minus costs. ② <b>Flat check</b> — no-signal strategy = zero P&amp;L. ③ <b>Leakage check</b> — signal at <em>t</em> uses only data ≤ <em>t</em>. ④ <b>Cost check</b> — with-cost ≤ without-cost, never reverse. These make the platform trustworthy <em>and</em> demoable later.</p>
+      </div>
+    </section>
+
+    <section id="c">
+      <h2>C · Business-Model Patterns</h2>
+      <span class="sec-tag">How this becomes a business, if it earns one</span>
+      <p>You said: personal tool first, product if it works. The market signal is consistent across every player that <em>did</em> monetize.</p>
+
+      <table>
+        <thead>
+          <tr><th>Player</th><th>Model</th><th>Lesson</th></tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td><strong>QuantConnect / LEAN</strong></td>
+          <td>OSS engine + cloud IaaS</td>
+          <td><b>Land-and-expand:</b> free/OSS entry → paid compute nodes → data subscriptions → enterprise/on-prem licensing. ~400&nbsp;TB data library + 40+ vendor dataset marketplace. Virtual currency (QCC) for consumption billing. <b>Data is the moat.</b></td>
+        </tr>
+        <tr>
+          <td><strong>vectorbt</strong></td>
+          <td>OSS core + paid Pro tier</td>
+          <td>Free engine, paid features/scale. Lighter version of the same land-and-expand.</td>
+        </tr>
+        <tr>
+          <td><strong>backtrader</strong></td>
+          <td>Pure OSS, no commercial layer</td>
+          <td>Great internals study, <b>dead-end for business</b> — proves you need a paid layer beyond the engine.</td>
+        </tr>
+        <tr>
+          <td><strong>Polygon / Databento / iVolatility</strong></td>
+          <td>Sell <em>data</em>, not the engine</td>
+          <td>The calculator is commoditized; <b>clean, point-in-time data is the recurring-revenue asset.</b></td>
+        </tr>
+        </tbody>
+      </table>
+
+      <div class="callout accent">
+        <div class="ttl">The pattern to remember</div>
+        <p>Viable businesses = <strong>engine (free/OSS) + data or hosting (paid)</strong>. Don't plan to monetize the calculator. Monetize <b>compute</b> (run users' configs on big machines) and/or <b>clean point-in-time data</b> (a licensable asset). Our config-driven runs map naturally onto a "compute node" later; our pydantic contracts map onto a hosted API; our pluggable data layer maps onto a marketplace.</p>
+      </div>
+    </section>
+
+    <section id="d">
+      <h2>D · Open-Source Landscape &amp; Roadmap</h2>
+      <span class="sec-tag">Is an OSS project a good idea? (multi-agent research, 2026-07-17)</span>
+      <p>Four parallel research agents mapped the open-source quant world — backtesting engines, research tooling, execution/live-trading, and the strategic question of whether to launch a new open-source project. Verdict up front: <strong>yes, but only if it is narrow and opinionated</strong> — not "yet another engine." The detailed findings follow.</p>
+
+      <h3>D1 · Open-source backtesting engines</h3>
+      <p>Status verified July 2026. The space is crowded and mature at the top, but full of abandonware below it.</p>
+      <table>
+        <thead><tr><th>Engine</th><th>Lang</th><th>Model</th><th>Live parity</th><th>Status (2026)</th></tr></thead>
+        <tbody>
+          <tr><td><strong>LEAN</strong> (QuantConnect)</td><td>C#/Py</td><td>Event, hybrid</td><td>Yes (cloud + on-prem)</td><td>Active</td></tr>
+          <tr><td><strong>backtrader</strong></td><td>Py</td><td>Event</td><td>Partial</td><td>Dormant (last rel. 2023)</td></tr>
+          <tr><td><strong>vectorbt</strong></td><td>Py (Numba/Rust)</td><td>Vectorized</td><td>No (PRO paid)</td><td>Active (v1.0 2026)</td></tr>
+          <tr><td><strong>zipline-reloaded</strong></td><td>Py</td><td>Event (Pipeline)</td><td>No</td><td>Active</td></tr>
+          <tr><td><strong>nautilus_trader</strong></td><td>Rust/Py</td><td>Event, deterministic</td><td>Yes (single-node)</td><td>Active (crypto-first)</td></tr>
+          <tr><td><strong>bt</strong></td><td>Py</td><td>Event/vectorized, allocation</td><td>No</td><td>Active</td></tr>
+          <tr><td><strong>freqtrade / Jesse / OctoBot</strong></td><td>Py</td><td>Event</td><td>Yes</td><td>Active (crypto-only)</td></tr>
+          <tr><td><strong>backtesting.py</strong></td><td>Py</td><td>Hybrid bar loop</td><td>No</td><td>Active (AGPL)</td></tr>
+          <tr><td><strong>PyAlgoTrade</strong></td><td>Py</td><td>Event</td><td>No</td><td>DEAD → Basana</td></tr>
+        </tbody>
+      </table>
+      <p class="small">Notable dead: original Zipline (abandoned 2020, superseded by zipline-reloaded); PyAlgoTrade archived (points to Basana).</p>
+      <div class="callout warn">
+        <div class="ttl">Gaps the OSS engines leave open</div>
+        <p>① <b>Stocks + live parity without cloud/vendor lock-in</b> — LEAN is C#/cloud, nautilus is crypto-first, and the stocks-focused OSS tools (zipline-reloaded, bt, backtesting.py, vectorbt) are backtest-only. ② <b>No lightweight, permissively-licensed, actively-maintained event engine</b> — backtrader is dormant, backtesting.py is AGPL, PyAlgoTrade is dead. ③ <b>Built-in corporate actions / point-in-time fundamentals</b> are DIY. ④ <b>First-class ML + parameter-stability</b> (walk-forward + overfitting guards) not combined for equities. ⑤ <b>Agent/LLM-native strategy authoring</b> is only nascent.</p>
+      </div>
+
+      <h3>D2 · OSS quant research &amp; fund-style tooling</h3>
+      <table>
+        <thead><tr><th>Library</th><th>Category</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr><td>PyPortfolioOpt · Riskfolio-Lib · cvxpy</td><td>Portfolio opt</td><td>Mature; classical methods (MVO/BL/HRP); Riskfolio academic tilt</td></tr>
+          <tr><td>statsmodels · arch</td><td>Econometrics</td><td>Mature; arch GARCH solid; not trading-specific</td></tr>
+          <tr><td>sktime · tslearn · mlfinlab (fork)</td><td>TS / ML</td><td>mlfinlab official repo proprietary since 2023; use BSD fork</td></tr>
+          <tr><td>alphalens-reloaded · alpha-lens</td><td>Factor research</td><td>Mature; alpha-lens new, targets overfitting</td></tr>
+          <tr><td>yfinance · akshare · findatapy</td><td>Data acquisition</td><td>yfinance unstable; pandas-datareader broken; akshare China-centric</td></tr>
+          <tr><td>HyperDB · us-markets-timemachine</td><td>Point-in-time data</td><td>Fragmentary; needs API key; pre-2000 weak</td></tr>
+          <tr><td>quantstats · pyfolio-reloaded</td><td>Reporting</td><td>Mature; pyfolio zipline-coupled</td></tr>
+          <tr><td>Qlib (Microsoft)</td><td>Full-stack ML</td><td>Active but heavy / ML-biased, not research-first</td></tr>
+        </tbody>
+      </table>
+      <div class="callout accent">
+        <div class="ttl">Where OSS is weakest — our opportunities</div>
+        <p>① <b>Clean point-in-time, survivorship-bias-free equities data</b> — the single biggest gap; production PIT fundamentals are effectively vendor-only (Sharadar, EODHD). ② <b>Production risk engine</b> — no OSS Barra-style multi-factor risk model with attribution. ③ <b>Coherent research→backtest→risk surface</b> — best tools are siloed (alphalens + zipline + pyfolio), manual to wire. ④ <b>Data-acquisition reliability</b> — yfinance instability, pandas-datareader dead.</p>
+      </div>
+
+      <h3>D3 · OSS execution &amp; live trading</h3>
+      <table>
+        <thead><tr><th>Tool</th><th>Lang</th><th>Brokers / Markets</th><th>Maturity</th><th>Gap</th></tr></thead>
+        <tbody>
+          <tr><td><strong>ib_async</strong></td><td>Py</td><td>Interactive Brokers (equities/opts/futures)</td><td>Active fork</td><td>Needs Gateway; no parity layer</td></tr>
+          <tr><td><strong>alpaca-py</strong></td><td>Py</td><td>Alpaca US equities + crypto</td><td>Mature</td><td>US-only; paper ≠ realistic fills</td></tr>
+          <tr><td>schwab-py / Schwabdev</td><td>Py</td><td>Charles Schwab</td><td>Active / unofficial</td><td>OAuth; no native paper</td></tr>
+          <tr><td>ccxt</td><td>Py/JS</td><td>105+ crypto exchanges</td><td>Mature</td><td>Crypto only</td></tr>
+          <tr><td><strong>LEAN</strong></td><td>C#/Py</td><td>IB, Alpaca, Tradier, Schwab, Tastytrade…</td><td>Production</td><td>Heavy Docker; parity tricky</td></tr>
+          <tr><td>nautilus_trader</td><td>Py+Rust</td><td>Crypto + IB (beta)</td><td>Production (crypto)</td><td>Equities via IB still beta</td></tr>
+          <tr><td>freqtrade / Jesse</td><td>Py</td><td>Crypto via CCXT</td><td>Mature</td><td>Crypto only</td></tr>
+          <tr><td>Icarus / OmniQuant / trade-engine</td><td>Py/Rust</td><td>IB / Alpaca (OMS/risk)</td><td>Emerging</td><td>Young, unaudited</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Realistic stocks path:</strong> <b>Alpaca</b> (simplest — paper &amp; live share one spec, only the key flag differs; US-only) or <b>LEAN</b> (best research-to-live parity; broker swap is a config change). ccxt/freqtrade/Jesse are crypto-only; backtrader's live IB is unmigrated. Gaps: sim/live realism (most paper modes ignore slippage/queue/dividends), thin equities broker coverage, maintenance fragility (ib_insync archived 2024), and no turnkey retail EMS.</p>
+
+      <h3>D4 · Strategy verdict: build net-new, narrow, trusted</h3>
+      <p>"Yet another backtester" fails on <b>bus factor + maintenance burden</b> — most quant OSS dies when the solo maintainer burns out, and forking a massive engine (LEAN=C#, nautilus=Rust) saddles you with a contributor-hostile surface you can't sustain. <strong>But the graveyard is full of engines, not of coherent, trustworthy, easy-to-adopt research tools.</strong> So: build net-new, but <em>wrap, don't rebuild</em> — use a vectorized back-end for sweeps and an event-driven back-end for verification; your code owns the contracts, the no-look-ahead guarantees, the reporting, and the data interface.</p>
+      <div class="callout good">
+        <div class="ttl">The wedge: no-look-ahead by default, enforced by architecture</div>
+        <p>Make trust the headline, not features. Concretely: strictly <b>point-in-time data access</b>, a <b>timestamp-ordered event loop</b>, an <b>automated look-ahead &amp; overfitting audit</b> (Deflated Sharpe, backtest-overfitting score) run on <em>every</em> result, and <b>zero global mutable state</b>. The engine should refuse to compile strategies that can leak. This is verifiable, demoable, and a genuine pain no incumbent markets as its headline.</p>
+      </div>
+      <h4>Phased open-source roadmap</h4>
+      <div class="grid2">
+        <div class="card"><h4>v0.1 · Personal tool (now)</h4><p>Event-loop core + point-in-time data loader + one report. Prove the no-look-ahead guarantee holds. Not public.</p></div>
+        <div class="card"><h4>v0.5 · Launch-worthy wedge (~3 mo)</h4><p>Dead-simple <code>pip install</code>, 3 example strategies that <em>fail loudly</em> if edited to leak, and the automated overfitting audit. <b>Launch trigger:</b> a stranger runs a trustworthy backtest in 5 minutes. Lead with the look-ahead guarantee.</p></div>
+        <div class="card"><h4>v1.0 · Community growth</h4><p>Plugin data interface, GitHub Discussions, contributor guide, CI with the audit as a gate. Begin contributing broker/data adapters upstream to borrow goodwill.</p></div>
+        <div class="card"><h4>v2.0 · Sustainability layer</h4><p>Paid <b>point-in-time data</b> subscriptions + optional <b>hosted compute</b> (open-core, à la QuantConnect). Engine stays free/OSS; monetize the data + compute you already maintain.</p></div>
+      </div>
+      <div class="callout warn">
+        <div class="ttl">Top risks</div>
+        <p>① <b>Bus factor 1</b> → keep surface tiny; design for contributor onboarding from v0.5; plan a commercial entity. ② <b>"Just another engine" apathy</b> → market trust + 5-minute start, never feature lists. ③ <b>Data licensing cost/legal</b> → free/own-sourced PIT data first; paid data is v2. ④ <b>Overfitting theater</b> → the audit must be mandatory and honest. ⑤ <b>Incumbent co-opting</b> → guarantee + Pythonic API + trivial install is hard for C#/Rust incumbents to copy without rewriting.</p>
+      </div>
+    </section>
+
+    <section id="synthesis">
+      <h2>Synthesis · Our Design</h2>
+      <span class="sec-tag">What we steal, what we defer</span>
+      <p>Translating A + B + C into a concrete shape for a stocks-only Python platform:</p>
+      <ul class="clean">
+        <li><b>Module layout</b> — <code>data / strategy / portfolio / broker / analytics / config / tests</code>, each with a clean interface (LEAN's handler idea, backtrader's analyzer separation).</li>
+        <li><b>Engine</b> — <b>hybrid</b>: vectorized numpy/pandas indicators → bar-by-bar portfolio simulator → fills at <strong>next-bar close</strong> (configurable <code>fill_lag</code>), with pluggable commission + slippage models (costs first-class, per lens B).</li>
+        <li><b>Runs are pure</b> — <code>config (pydantic) + data → results</code>. Enables parameter sweeps, walk-forward, and a future API/server with zero engine changes.</li>
+        <li><b>Data store</b> — fetch (Yahoo/CSV) → normalize → save as <strong>Parquet</strong> locally, snapshot-versioned. Point-in-time-aware hook left open for later.</li>
+        <li><b>Determinism &amp; tests</b> — seeded RNG, no-look-ahead + correctness guardrails from day one (lens B). This is also what makes a future product <em>credible</em>.</li>
+        <li><b>Product seams (designed, not built)</b> — config environments for live later, pydantic API contract, separable data layer, deterministic runtime. None built now.</li>
+      </ul>
+    </section>
+
+    <section id="features">
+      <h2>Feature Shortlist</h2>
+      <span class="sec-tag">Build-now · keep-door-open · defer</span>
+
+      <h4>Build now (v1 — the trustworthy vertical slice)</h4>
+      <div class="pill-row">
+        <span class="pill build">Data layer: CSV / Yahoo → Parquet</span>
+        <span class="pill build">Hybrid engine, daily bars</span>
+        <span class="pill build">1–2 example strategies (momentum / SMA)</span>
+        <span class="pill build">Cost model (commission + slippage)</span>
+        <span class="pill build">Tearsheet (7 metrics + trade stats)</span>
+        <span class="pill build">No-look-ahead + correctness tests</span>
+        <span class="pill build">CLI / notebook entry point</span>
+      </div>
+
+      <h4>Keep the door open (design for, don't build)</h4>
+      <div class="pill-row">
+        <span class="pill door">Config "environments" seam (live later)</span>
+        <span class="pill door">Pydantic API contract</span>
+        <span class="pill door">Pluggable data → marketplace hook</span>
+        <span class="pill door">Point-in-time data layer hook</span>
+        <span class="pill door">Deterministic seed / runtime</span>
+        <span class="pill door">Thin FastAPI server (later)</span>
+      </div>
+
+      <h4>Defer (explicitly out of scope)</h4>
+      <div class="pill-row">
+        <span class="pill defer">Web UI</span>
+        <span class="pill defer">Auth / multi-tenancy</span>
+        <span class="pill defer">Billing</span>
+        <span class="pill defer">Strategy marketplace</span>
+        <span class="pill defer">Live trading</span>
+        <span class="pill defer">Minute / intraday bars</span>
+        <span class="pill defer">Options / futures</span>
+      </div>
+
+      <div class="callout good">
+        <div class="ttl">Why this is safe</div>
+        <p>Building the vertical slice proves the whole stack. The "door-open" items cost almost nothing now (clean boundaries, config, tests) yet prevent a rewrite if you later productize. The "defer" items are pure YAGNI until there's a real reason.</p>
+      </div>
+    </section>
+
+    <section id="next">
+      <h2>Next Steps</h2>
+      <ul class="clean">
+        <li><b>Finalize the architecture doc</b> — turn this spike into a one-page module spec + data schema.</li>
+        <li><b>Decide MVP specifics</b> — bar granularity (daily assumed), data source (Yahoo/CSV to start), first strategy (momentum or SMA), universe size &amp; years.</li>
+        <li><b>Build the vertical slice</b> — one strategy, small universe, real costs, tearsheet, guardrail tests — end to end.</li>
+        <li><b>Then decide</b> — extend strategies/data, or start the product seams.</li>
+      </ul>
+      <p class="small">Open this file in a browser to read it visually. To keep iterating, tell me the MVP specifics above and I'll draft the architecture doc + build order.</p>
+    </section>
+
+    <section id="log">
+      <h2>Research Log</h2>
+      <span class="sec-tag">Running record of research sessions</span>
+      <p class="small">This section is the accumulation point for all research on the platform. New sessions are appended here, newest first; the full A/B/C findings from the kickoff spike are in the sections above. Future research should be added to this same file.</p>
+      <div class="callout">
+        <div class="ttl" style="color:var(--accent)">2026-07-17 · OSS Landscape &amp; Roadmap (4-agent research)</div>
+        <p><strong>Question:</strong> research all OSS quant/hedge-fund tools + whether an open-source project roadmap is a good idea.</p>
+        <p><strong>Findings:</strong> engines crowded (LEAN active, backtrader dormant, vectorbt/nautilus/zipline-reloaded/bt active, freqtrade/Jesse crypto-only, PyAlgoTrade dead); research tooling mature but <em>point-in-time data &amp; production risk engines are the biggest OSS gaps</em>; execution OSS path = Alpaca (simple) or LEAN (parity), crypto tools irrelevant for stocks.</p>
+        <p><strong>Verdict:</strong> build net-new but narrow/opinionated — <b>do not fork</b> LEAN/nautilus/backtrader. Wedge = <em>no-look-ahead by default, architecturally enforced</em> (PIT data, timestamp-ordered loop, mandatory overfitting audit, zero global state). Phased roadmap v0.1 → v0.5 (launch) → v1.0 (community) → v2.0 (paid PIT data + hosted compute, open-core). Full detail in section D.</p>
+      </div>
+      <div class="callout">
+        <div class="ttl" style="color:var(--accent)">2026-07-17 · Kickoff Research Spike (A / B / C)</div>
+        <p><strong>Scope locked:</strong> stocks-only, Python, hybrid engine (vectorized signals + bar-by-bar portfolio sim, next-bar-close fills), pure <code>config + data → results</code> runs. Personal tool first; productize (engine + data/hosting) only if it earns one.</p>
+        <p><strong>Engines surveyed:</strong> LEAN (handler-based, config environments run backtest &amp; live), backtrader (per-bar <code>next()</code>, analyzers split out), vectorbt (fully vectorized, ~1M fills in 70–100&nbsp;ms), nautilus_trader (Rust core, fixed-point determinism), zipline-reloaded / bt (Pipeline for alpha research + portfolio tree).</p>
+        <p><strong>Verdict:</strong> adopt modular layer separation + pluggable data/cost models; ship no-look-ahead + correctness tests from day one. Trustworthy tearsheet = CAGR / Sharpe / Sortino / Calmar / Max Drawdown / Turnover / Exposure + trade stats + cost attribution. Viable business = engine (free/OSS) + data or hosting (paid).</p>
+        <p><strong>Artifacts:</strong> this HTML report; architecture + feature shortlist (build-now / keep-door-open / defer) above; a cross-session memory note was saved so future work picks up the context.</p>
+      </div>
+    </section>
+
+    <footer id="sources">
+      <h3>Sources</h3>
+      <p class="small">Grounded in current documentation and write-ups (accessed 2026-07-17).</p>
+      <ol>
+        <li><a class="link" href="https://github.com/QuantConnect/Lean/tree/master/Documentation">QuantConnect LEAN — Documentation (GitHub)</a></li>
+        <li><a class="link" href="https://www.quantconnect.com/docs/v2/lean-engine/getting-started">LEAN Engine — Getting Started (QuantConnect Docs)</a></li>
+        <li><a class="link" href="https://deepwiki.com/QuantConnect/Lean/3-engine-and-execution">LEAN Engine &amp; Execution Architecture (DeepWiki)</a></li>
+        <li><a class="link" href="https://backtrader.readthedocs.io/en/latest/advanced/architecture/overview.html">backtrader — Architecture Overview</a></li>
+        <li><a class="link" href="https://backtrader.readthedocs.io/en/latest/user-guide/concepts/concepts.html">backtrader — Basic Concepts</a></li>
+        <li><a class="link" href="https://vectorbt.dev/">vectorbt — Vectorized Backtesting</a></li>
+        <li><a class="link" href="https://github.com/polakowo/vectorbt">vectorbt (GitHub)</a></li>
+        <li><a class="link" href="https://nautilustrader.io/docs/nightly/concepts/overview/">NautilusTrader — Overview</a></li>
+        <li><a class="link" href="https://deepwiki.com/nautechsystems/nautilus_trader/2.1-hybrid-pythonrust-architecture">NautilusTrader — Hybrid Python/Rust Architecture (DeepWiki)</a></li>
+        <li><a class="link" href="https://zipline.ml4trading.io/api-reference.html">zipline-reloaded — Pipeline API</a></li>
+        <li><a class="link" href="https://pypi.org/project/zipline-reloaded/">zipline-reloaded (PyPI)</a></li>
+        <li><a class="link" href="https://www.susanpotter.net/quant/backtest-bias-taxonomy/">A Taxonomy of Backtest Lies — Susan Potter</a></li>
+        <li><a class="link" href="https://tesseraalpha.com/methodology/backtesting-survivorship-lookahead">The Three Ways Backtests Lie — Tessera Alpha</a></li>
+        <li><a class="link" href="https://foxholm.com/q/concepts/backtesting-pitfalls/">Backtesting Pitfalls — Foxholm Financial</a></li>
+        <li><a class="link" href="https://www.pfolio.io/academy/look-ahead-bias">Look-ahead Bias — pfolio academy</a></li>
+        <li><a class="link" href="https://portfoliooptimizationbook.com/book/8.2-seven-sins.html">The Seven Sins of Quantitative Investing</a></li>
+      </ol>
+    </footer>
+  </main>
+</div>
+<script>
+  // Minimal scrollspy for the TOC active state
+  const links = [...document.querySelectorAll('nav.toc a')];
+  const map = new Map(links.map(a => [a.getAttribute('href').slice(1), a]));
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(l => l.classList.remove('active'));
+        const a = map.get(e.target.id);
+        if (a) a.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+  document.querySelectorAll('section, header.hero').forEach(s => { if (s.id) obs.observe(s); });
+</script>
+</body>
+</html>
