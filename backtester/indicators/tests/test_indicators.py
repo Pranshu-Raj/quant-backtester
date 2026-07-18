@@ -91,6 +91,19 @@ def test_rsi_prefix_is_nan() -> None:
     assert out.iloc[:14].isna().all()
 
 
+def test_rsi_known_answers_for_monotonic_series() -> None:
+    # Closed-form expected values, no reference implementation needed:
+    # pure uptrend -> 100 (no losses); pure downtrend -> 0 (no gains);
+    # flat -> NaN (no movement either way).
+    up = pd.Series(np.linspace(100.0, 200.0, 30))
+    down = pd.Series(np.linspace(200.0, 100.0, 30))
+    flat = pd.Series(np.full(30, 100.0))
+
+    assert rsi(up, 14).iloc[-1] == pytest.approx(100.0)
+    assert rsi(down, 14).iloc[-1] == pytest.approx(0.0)
+    assert np.isnan(rsi(flat, 14).iloc[-1])
+
+
 def test_cross_true_only_on_up_cross_bar() -> None:
     fast = pd.Series([1.0, 1.0, 3.0, 4.0, 5.0, 6.0])
     slow = pd.Series([2.0, 2.0, 2.0, 2.0, 2.0, 2.0])

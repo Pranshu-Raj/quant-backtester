@@ -100,6 +100,18 @@ class _LeakyStrategy:
         return []
 
 
+class _BuyEveryBar:
+    """Emits a market buy on every bar. The last bar's order cannot fill
+    inside the window, so it is forced down the end-of-data fallback path —
+    exactly the case the equity/trades desync bug lived in."""
+
+    def __init__(self, qty: float = 5.0) -> None:
+        self._qty = qty
+
+    def on_bar(self, ctx) -> List[Order]:  # noqa: ANN001 - ctx is BarContext
+        return [Order(symbol=_SYMBOL, qty=self._qty)]
+
+
 # --- Portfolio math ---------------------------------------------------------
 
 
@@ -202,3 +214,24 @@ def test_run_equity_curve_is_indexed_by_ts(tmp_path: Path) -> None:
 
     assert result.equity_curve.index.name == "ts"
     assert isinstance(result.equity_curve.index, pd.DatetimeIndex)
+
+
+def test_run_end_of_data_fill_reflected_in_equity(tmp_path: Path) -> None:
+    config = _make_config(n_bars=10)
+    loader = _make_loader(tmp_path, n_bars=10)
+
+    result = run(config, loader, _BuyEveryBar(qty=5.0))
+
+    # One order per bar -> the final one lands in the end-of-data fallback.
+    assert len(result.trades) == 10
+
+    # Reconstruct final equity from the trade log and compare to the curve's
+    # last point. The end-of-data fix makes these agree; without it the curve
+    # tail ignored the boundary fills and the two would diverge.
+    cash = config.starting_cash
+    position = 0.0
+    for t in result.trades:
+        cash -= t.qty * t.fill_price + t.commission + t.slippage
+        position += t.qty
+    last_close = result.trades[-1].fill_price  # single symbol: mark == last fill
+    assert cash + position * last_close == pytest.approx(result.equity_curve.iloc[-1])

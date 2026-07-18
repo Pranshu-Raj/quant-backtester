@@ -137,6 +137,11 @@ def run(
         trade = portfolio.apply(signal_bar, order.qty, fill_price, cost)
         trades.append(trade)
 
+    # The fills above mutate the portfolio *after* the final equity point was
+    # snapshotted inside the loop, so recompute the last value to keep it
+    # consistent with `trades` (no orphaned position at the data boundary).
+    equity_values[-1] = portfolio.equity_at(bars[-1])
+
     equity_curve = pd.Series(
         equity_values, index=pd.Index(equity_index, name="ts")
     )
